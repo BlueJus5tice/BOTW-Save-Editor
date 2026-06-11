@@ -3,21 +3,21 @@
 #include "main.h"
 
 char itemName[200][30];
-long int quantItems[200];
-long int newQuantItems[200];
+int quantItems[200];
+int newQuantItems[200];
 int numberOfItems;
 
-long int rupeeValue;
-long int rupees;
+int rupeeValue;
+int rupees;
 
 int numberOfWeapons;
 int numberOfBows;
 int numberOfShields;
 
-long int quantMod[200];
-long int new_quantMod[200];
-long int modNames[200];
-long int new_modNames[200];
+int quantMod[200];
+int new_quantMod[200];
+int modNames[200];
+int new_modNames[200];
 
 int version;
 FILE *fp;

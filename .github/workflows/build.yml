@@ -8,7 +8,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install SDL dependencies
         run: |
-          dkp-pacman -S libnx switch-dev switch-sdl2 switch-sdl2_ttf switch-sdl2_image --noconfirm
+          dkp-pacman -S libnx switch-dev switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-libpng switch-libjpeg-turbo switch-bzip2 switch-libwebp switch-freetype switch-harfbuzz --noconfirm
+      - name: Download font
+        run: |
+          mkdir -p romfs
+          curl -sL -o romfs/arial.ttf "https://github.com/liberationfonts/liberation-fonts/raw/main/LiberationSans-Regular.ttf"
       - name: Build
         run: make
       - uses: actions/upload-artifact@v4

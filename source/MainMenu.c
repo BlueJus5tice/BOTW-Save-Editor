@@ -1,7 +1,6 @@
 #include "MainMenu.h"
 
 SDL_Window* window;
-SDL_Surface* screenSurface;
 SDL_Renderer* renderer;
 TTF_Font *Arial, *Arial_S, *Arial_M;
 
@@ -18,6 +17,7 @@ static inline SDL_Color SDL_MakeColor(Uint8 r, Uint8 g, Uint8 b){
 #define WHITE_COLOR SDL_MakeColor(254,254,254)
 #define BLUE_TEXT_COLOR SDL_MakeColor(1,254,203)
 #define RED_TEXT_COLOR SDL_MakeColor(255,80,80)
+#define GREEN_COLOR SDL_MakeColor(80,255,80)
 
 void SDL_ClearScreen(SDL_Renderer* renderer, SDL_Color colour){
     SDL_SetRenderDrawColor(renderer, colour.r, colour.g, colour.b, 255);
@@ -50,7 +50,7 @@ void selectSlotMenu(int slotchar){
     SDL_DrawRect(renderer,0,648,1280,72, TOPBAR_COLOR);
     SDL_DrawRect(renderer,30,648,1220,2, WHITE_COLOR);
     SDL_DrawText(Arial, 110, 27, WHITE_TEXT_COLOR, "BOTW Save Editor");
-    SDL_DrawText(Arial_S, 1000, 670, WHITE_TEXT_COLOR, "A: Select | +: Exit");
+    SDL_DrawText(Arial_S, 900, 670, WHITE_TEXT_COLOR, "\x85:Select | +:Exit");
 
     SDL_DrawRect(renderer,380,148,517,400, LEFTBAR_COLOR);
     SDL_DrawText(Arial_S,554,200, WHITE_TEXT_COLOR, "Select File Slot:");
@@ -70,14 +70,14 @@ void errorScreen(){
     SDL_DrawRect(renderer,30,648,1220,2, WHITE_COLOR);
     SDL_DrawText(Arial, 110, 27, WHITE_TEXT_COLOR, "BOTW Save Editor");
     SDL_DrawRect(renderer,380,248,517,167, LEFTBAR_COLOR);
-    SDL_DrawText(Arial_S,440,280, WHITE_TEXT_COLOR, "Error mounting save directory!");
-    SDL_DrawText(Arial_S,480,320, WHITE_TEXT_COLOR, "(Launch BOTW first, then retry)");
+    SDL_DrawText(Arial_S,440,280, WHITE_TEXT_COLOR, "Error mounting/reading save!");
+    SDL_DrawText(Arial_S,420,320, WHITE_TEXT_COLOR, "(Launch BOTW first, then retry)");
     SDL_RenderPresent(renderer);
 }
 
 void showCurrentRup(){
     char rupString[20];
-    snprintf(rupString, sizeof rupString, "Rupees: %ld", (long int)rupeeValue);
+    snprintf(rupString, sizeof rupString, "Rupees: %d", rupeeValue);
     SDL_DrawText(Arial_S, 1020, 25, WHITE_TEXT_COLOR, rupString);
 }
 
@@ -109,7 +109,7 @@ void showItemSDL(int currentItem){
     SDL_DrawRect(renderer, 470, 200, 750, 3, LEFTBAR_COLOR);
 
     char value[25];
-    snprintf(value, sizeof value, "%ld", (long int)newQuantItems[currentItem]);
+    snprintf(value, sizeof value, "%d", newQuantItems[currentItem]);
 
     SDL_DrawRect(renderer, 470, 240, 750, 3, LEFTBAR_COLOR);
     SDL_DrawText(Arial_M, 480, 252, WHITE_TEXT_COLOR, "Quantity:");
@@ -117,11 +117,47 @@ void showItemSDL(int currentItem){
     SDL_DrawRect(renderer, 470, 300, 750, 3, LEFTBAR_COLOR);
 
     char othervalue[25];
-    snprintf(othervalue, sizeof othervalue, "%ld", (long int)new_quantMod[currentItem]);
+    snprintf(othervalue, sizeof othervalue, "%d", new_quantMod[currentItem]);
     SDL_DrawRect(renderer, 470, 320, 750, 3, LEFTBAR_COLOR);
     SDL_DrawText(Arial_M, 480, 332, WHITE_TEXT_COLOR, "Modifier:");
     SDL_DrawText(Arial_M, 1100, 332, BLUE_TEXT_COLOR, othervalue);
     SDL_DrawRect(renderer, 470, 380, 750, 3, LEFTBAR_COLOR);
+}
+
+void showEditValue(int currentItem){
+    SDL_DrawRect(renderer, 470, 140, 750, 3, LEFTBAR_COLOR);
+    SDL_DrawText(Arial, 480, 150, WHITE_TEXT_COLOR, translate(itemName[currentItem]));
+    SDL_DrawRect(renderer, 470, 200, 750, 3, LEFTBAR_COLOR);
+
+    char value[25];
+    snprintf(value, sizeof value, "%d", newQuantItems[currentItem]);
+
+    SDL_DrawRect(renderer, 470, 240, 750, 3, LEFTBAR_COLOR);
+    SDL_DrawText(Arial_M, 480, 252, WHITE_TEXT_COLOR, "Quantity:");
+    SDL_DrawRect(renderer, 530, 300, 200, 60, GREEN_COLOR);
+    SDL_DrawText(Arial, 550, 310, WHITE_TEXT_COLOR, value);
+    SDL_DrawRect(renderer, 470, 380, 750, 3, LEFTBAR_COLOR);
+
+    SDL_DrawText(Arial_S, 500, 420, RED_TEXT_COLOR, "\x84: -10   \x85: +10");
+    SDL_DrawText(Arial_S, 500, 450, RED_TEXT_COLOR, "\x86: -1    \x87: +1");
+}
+
+void showRupeeEdit(){
+    SDL_DrawRect(renderer, 470, 140, 750, 3, LEFTBAR_COLOR);
+    SDL_DrawText(Arial, 480, 150, WHITE_TEXT_COLOR, "Edit Rupees");
+    SDL_DrawRect(renderer, 470, 200, 750, 3, LEFTBAR_COLOR);
+
+    char value[25];
+    snprintf(value, sizeof value, "%d", rupeeValue);
+
+    SDL_DrawRect(renderer, 470, 240, 750, 3, LEFTBAR_COLOR);
+    SDL_DrawText(Arial_M, 480, 252, WHITE_TEXT_COLOR, "Rupees:");
+    SDL_DrawRect(renderer, 530, 300, 200, 60, GREEN_COLOR);
+    SDL_DrawText(Arial, 550, 310, WHITE_TEXT_COLOR, value);
+    SDL_DrawRect(renderer, 470, 380, 750, 3, LEFTBAR_COLOR);
+
+    SDL_DrawText(Arial_S, 500, 420, RED_TEXT_COLOR, "\x84: -100  \x85: +100");
+    SDL_DrawText(Arial_S, 500, 450, RED_TEXT_COLOR, "\x86: -10   \x87: +10");
 }
 
 void mainUI(int x, int currentPage, int maxPage){
@@ -133,7 +169,7 @@ void mainUI(int x, int currentPage, int maxPage){
     SDL_DrawRect(renderer,0,648,1280,72, TOPBAR_COLOR);
     SDL_DrawRect(renderer,30,648,1220,2, WHITE_COLOR);
     SDL_DrawText(Arial, 110, 27, WHITE_TEXT_COLOR, "BOTW Save Editor");
-    SDL_DrawText(Arial_S, 700, 670, WHITE_TEXT_COLOR, "A: Edit | B: Back | Y: Edit Rupees | +: Exit");
+    SDL_DrawText(Arial_S, 620, 670, WHITE_TEXT_COLOR, "\x85:Select  B:Back  Y:Rupees  A:Edit  +:Save&Exit");
 
     setMenuItems(x, currentPage);
     showCurrentRup();

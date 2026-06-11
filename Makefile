@@ -73,7 +73,16 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 .PHONY: $(BUILD) clean all
 
-all: $(BUILD)
+all: $(ROMFS)/arial.ttf $(BUILD)
+
+$(ROMFS)/arial.ttf:
+	@mkdir -p $(ROMFS)
+	@if [ ! -f $(ROMFS)/arial.ttf ]; then \
+		echo "Downloading LiberationSans font..."; \
+		curl -sL -o $(ROMFS)/arial.ttf "https://github.com/liberationfonts/liberation-fonts/raw/main/LiberationSans-Regular.ttf" 2>/dev/null || \
+		wget -q -O $(ROMFS)/arial.ttf "https://github.com/liberationfonts/liberation-fonts/raw/main/LiberationSans-Regular.ttf" 2>/dev/null || \
+		echo "WARNING: Could not download font. Place arial.ttf in romfs/ manually."; \
+	fi
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@

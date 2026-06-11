@@ -1,20 +1,20 @@
 #include "botw_backend.h"
 
-int rupID[7]      = {0x00e0a0, 0x00e110, 0x00e110, 0x00e678, 0x00e730, 0x00eaf8, 0x00eaf8};
-int itemsID[7]    = {0x052828, 0x0528d8, 0x0528c0, 0x053890, 0x05fa48, 0x060408, 0x060408};
-int itemsQuant[7] = {0x063340, 0x0633f0, 0x0633d8, 0x064550, 0x070730, 0x0711c8, 0x0711c8};
-int header[7]     = {0x24e2,   0x24ee,   0x2588,   0x29c0,   0x3ef8,   0x471a,   0x471b};
-int FLAGS_WEAPON[7] =  {0x050328, 0x0503d8, 0x0503c0, 0x051270, 0x05d420, 0x05dd20, 0x05dd20};
-int FLAGSV_WEAPON[7] = {0x0a9ca8, 0x0a9d78, 0x0a9d58, 0x0ab8d0, 0x0c3bd8, 0x0c4c68, 0x0c4c68};
-int FLAGS_BOW[7]={0x0045f0, 0x0045f8, 0x0045f8, 0x0047e8, 0x004828, 0x004990, 0x004990};
-int FLAGSV_BOW[7]={0x00a8e0, 0x00a940, 0x00a940, 0x00ae08, 0x00ae90, 0x00b1e0, 0x00b1e0};
-int FLAGS_SHIELD[7]={0x0b5810, 0x0b58e8, 0x0b58c8, 0x0b7910, 0x0cfc70, 0x0d1038, 0x0d1038};
-int FLAGSV_SHIELD[7]={0x063218, 0x0632c8, 0x0632b0, 0x064420, 0x070600, 0x071098, 0x071098};
+static int rupID[7]      = {0x00e0a0, 0x00e110, 0x00e110, 0x00e678, 0x00e730, 0x00eaf8, 0x00eaf8};
+static int itemsID[7]    = {0x052828, 0x0528d8, 0x0528c0, 0x053890, 0x05fa48, 0x060408, 0x060408};
+static int itemsQuant[7] = {0x063340, 0x0633f0, 0x0633d8, 0x064550, 0x070730, 0x0711c8, 0x0711c8};
+static int header[7]     = {0x24e2,   0x24ee,   0x2588,   0x29c0,   0x3ef8,   0x471a,   0x471b};
+static int FLAGS_WEAPON[7] =  {0x050328, 0x0503d8, 0x0503c0, 0x051270, 0x05d420, 0x05dd20, 0x05dd20};
+static int FLAGSV_WEAPON[7] = {0x0a9ca8, 0x0a9d78, 0x0a9d58, 0x0ab8d0, 0x0c3bd8, 0x0c4c68, 0x0c4c68};
+static int FLAGS_BOW[7]={0x0045f0, 0x0045f8, 0x0045f8, 0x0047e8, 0x004828, 0x004990, 0x004990};
+static int FLAGSV_BOW[7]={0x00a8e0, 0x00a940, 0x00a940, 0x00ae08, 0x00ae90, 0x00b1e0, 0x00b1e0};
+static int FLAGS_SHIELD[7]={0x0b5810, 0x0b58e8, 0x0b58c8, 0x0b7910, 0x0cfc70, 0x0d1038, 0x0d1038};
+static int FLAGSV_SHIELD[7]={0x063218, 0x0632c8, 0x0632b0, 0x064420, 0x070600, 0x071098, 0x071098};
 
 void writeFile(){
     if(rupeeValue != rupees){
         fseek(fp, rupID[version], SEEK_SET);
-        fwrite(&rupeeValue, sizeof(long int), 1, fp);
+        fwrite(&rupeeValue, sizeof(int), 1, fp);
     }
 
     for(int x = 0; x < numberOfItems; x++){
@@ -59,7 +59,7 @@ void writeFile(){
     }
 }
 
-void getData(){
+int getData(){
     int readHeader;
     fread(&readHeader, sizeof(int), 1, fp);
 
@@ -67,8 +67,10 @@ void getData(){
         if(readHeader == header[version]) break;
     }
 
+    if(version >= 7) return 0;
+
     fseek(fp, rupID[version], SEEK_SET);
-    fread(&rupees, sizeof(long int), 1, fp);
+    fread(&rupees, sizeof(int), 1, fp);
     rupeeValue = rupees;
 
     numberOfItems = 0;
@@ -78,7 +80,6 @@ void getData(){
 
     for(int y = 0; y < 50; y++){
         int offset = (y * 128);
-        int endOfItems = 0;
 
         itemName[y][0] = 0;
 
@@ -138,6 +139,8 @@ void getData(){
         new_modNames[idx] = modNames[idx];
         new_quantMod[idx] = quantMod[idx];
     }
+
+    return 1;
 }
 
 int setFile(int intSlot){
@@ -164,6 +167,11 @@ int setFile(int intSlot){
     fp = fopen(file_name, "r+b");
     if(fp == NULL) return 0;
 
-    getData();
+    int ret = getData();
+    if(!ret) {
+        fclose(fp);
+        fp = NULL;
+        return 0;
+    }
     return 1;
 }

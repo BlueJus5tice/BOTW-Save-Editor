@@ -9,7 +9,6 @@ void startSDLServices(){
     Arial_S = TTF_OpenFont("romfs:/arial.ttf", 22);
 
     SDL_CreateWindowAndRenderer(1280, 720, 0, &window, &renderer);
-    screenSurface = SDL_GetWindowSurface(window);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     if(mountSaveData() == 0){
@@ -83,6 +82,22 @@ void MenuButtons(int x){
     mainUI(buttons, currentPage, maxPage);
 }
 
+void adjustValue(int dir, int step){
+    if(currentState == 2){
+        newQuantItems[currentItem] += dir * step;
+        if(newQuantItems[currentItem] < 0) newQuantItems[currentItem] = 0;
+        if(newQuantItems[currentItem] > 9999) newQuantItems[currentItem] = 9999;
+        showEditValue(currentItem);
+        SDL_RenderPresent(renderer);
+    } else if(currentState == 3){
+        rupeeValue += dir * step;
+        if(rupeeValue < 0) rupeeValue = 0;
+        if(rupeeValue > 999999) rupeeValue = 999999;
+        showRupeeEdit();
+        SDL_RenderPresent(renderer);
+    }
+}
+
 void ConfirmButton(){
     switch(currentState){
         case 0:
@@ -97,8 +112,17 @@ void ConfirmButton(){
             break;
         case 1:
             currentState = 2;
-            mainUI(buttons, currentPage, maxPage);
+            showEditValue(currentItem);
+            SDL_RenderPresent(renderer);
             break;
+    }
+}
+
+void doSave(){
+    if(fp){
+        writeFile();
+        fclose(fp);
+        fp = NULL;
     }
 }
 
@@ -111,7 +135,14 @@ void buttonLogic(int x){
             MenuButtons(x);
             break;
         case 2:
-            MenuButtons(x);
+        case 3:
+            if(x >= 0 && x <= 3){
+                int step = (currentState == 2) ? 1 : 10;
+                if(x == 0) adjustValue(-1, step);
+                if(x == 1) adjustValue(1, step);
+                if(x == 2) adjustValue(1, step * 10);
+                if(x == 3) adjustValue(-1, step * 10);
+            }
             break;
     }
 }
@@ -130,18 +161,34 @@ int main(int argc, char **argv){
         if(kDown & HidNpadButton_Down) buttonLogic(1);
         if(kDown & HidNpadButton_Right) buttonLogic(2);
         if(kDown & HidNpadButton_Left) buttonLogic(3);
+
         if(kDown & HidNpadButton_A) ConfirmButton();
 
-        if(currentState <= 0){
-            if(kDown & HidNpadButton_Plus) break;
-        }
-        if(currentState > 0){
-            if(kDown & HidNpadButton_Plus) break;
-            if(kDown & HidNpadButton_B){
+        if(kDown & HidNpadButton_B){
+            if(currentState == 1){
                 currentState = 0;
-                slot = 0;
                 selectSlotMenu(slot);
+            } else if(currentState == 2){
+                currentState = 1;
+                mainUI(buttons, currentPage, maxPage);
+            } else if(currentState == 3){
+                currentState = 1;
+                mainUI(buttons, currentPage, maxPage);
             }
+        }
+
+        if(kDown & HidNpadButton_Y){
+            if(currentState == 1){
+                currentState = 3;
+                showRupeeEdit();
+                SDL_RenderPresent(renderer);
+            }
+        }
+
+        if(kDown & HidNpadButton_Plus){
+            if(currentState == 1 || currentState == 2 || currentState == 3)
+                doSave();
+            break;
         }
     }
 
@@ -150,11 +197,12 @@ int main(int argc, char **argv){
 }
 
 void closeServices(){
-    if(fp) fclose(fp);
+    if(fp) { fclose(fp); fp = NULL; }
     unmountSaveData();
-    fsdevUnmountDevice("save");
     TTF_CloseFont(Arial);
+    TTF_CloseFont(Arial_S);
+    TTF_CloseFont(Arial_M);
     TTF_Quit();
-    romfsExit();
     SDL_Quit();
+    romfsExit();
 }

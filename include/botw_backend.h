@@ -6,21 +6,21 @@
 #include <stdio.h>
 
 extern char itemName[200][30];
-extern long int quantItems[200];
-extern long int newQuantItems[200];
+extern int quantItems[200];
+extern int newQuantItems[200];
 extern int numberOfItems;
 
-extern long int rupeeValue;
-extern long int rupees;
+extern int rupeeValue;
+extern int rupees;
 
 extern int numberOfWeapons;
 extern int numberOfBows;
 extern int numberOfShields;
 
-extern long int quantMod[200];
-extern long int new_quantMod[200];
-extern long int modNames[200];
-extern long int new_modNames[200];
+extern int quantMod[200];
+extern int new_quantMod[200];
+extern int modNames[200];
+extern int new_modNames[200];
 
 extern int version;
 extern FILE *fp;

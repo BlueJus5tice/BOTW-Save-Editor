@@ -7,7 +7,6 @@
 #include "botw_backend.h"
 
 extern SDL_Window* window;
-extern SDL_Surface* screenSurface;
 extern SDL_Renderer* renderer;
 extern TTF_Font *Arial, *Arial_S, *Arial_M;
 
@@ -21,5 +20,7 @@ void showItemSDL(int currentItem);
 void selectSlotMenu(int slotchar);
 void errorScreen();
 void showCurrentRup();
+void showEditValue(int currentItem);
+void showRupeeEdit();
 
 #endif
