@@ -26,7 +26,7 @@ extern int version;
 extern FILE *fp;
 
 int setFile(int intSlot);
-void getData();
+int getData();
 void writeFile();
 
 #endif
