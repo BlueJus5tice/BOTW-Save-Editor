@@ -34,7 +34,7 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:= -lSDL2_ttf -lSDL2_image -lSDL2 \
-           -lpng -ljpeg `sdl2-config --libs` -lfreetype -lharfbuzz \
+           `sdl2-config --libs` -lfreetype -lharfbuzz -lpng -ljpeg \
            -lwebp -lz -lbz2 -lm -lnx
 
 LIBDIRS	:= $(PORTLIBS) $(LIBNX)
