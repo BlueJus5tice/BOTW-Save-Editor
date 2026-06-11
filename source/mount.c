@@ -1,39 +1,33 @@
 #include <string.h>
 #include <stdio.h>
 #include <switch.h>
+#include "mount.h"
 
-static AccountUid g_userID = {0};
+static AccountUid uid;
 
-void unmountSaveData(){
+void unmount_save() {
     fsdevCommitDevice("save");
     fsdevUnmountDevice("save");
 }
 
-int mountSaveData()
-{
-    u64 titleID = 0x01007ef00011e000;
-
+int mount_save() {
     accountInitialize(AccountServiceType_Application);
-
-    Result rc = accountGetPreselectedUser(&g_userID);
+    Result rc = accountGetPreselectedUser(&uid);
     if (R_FAILED(rc)) {
-        s32 userCount = 0;
-        accountGetUserCount(&userCount);
-        if (userCount > 0) {
-            AccountUid users[userCount];
+        s32 count = 0;
+        accountGetUserCount(&count);
+        if (count > 0) {
+            AccountUid users[8];
             s32 actual = 0;
-            accountListAllUsers(users, userCount, &actual);
+            accountListAllUsers(users, count, &actual);
             if (actual > 0) {
-                memcpy(&g_userID, &users[0], sizeof(AccountUid));
+                memcpy(&uid, &users[0], sizeof uid);
                 rc = 0;
             }
         }
     }
-
-    if (R_SUCCEEDED(rc)) {
-        rc = fsdevMountSaveData("save", titleID, g_userID);
-    }
-
+    if (R_SUCCEEDED(rc))
+        rc = fsdevMountSaveData("save", 0x01007ef00011e000, uid);
     accountExit();
     return R_SUCCEEDED(rc) ? 1 : 0;
 }

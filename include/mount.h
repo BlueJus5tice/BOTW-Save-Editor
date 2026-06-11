@@ -1,7 +1,7 @@
-#ifndef MOUNT_H_
-#define MOUNT_H_
+#ifndef MOUNT_H
+#define MOUNT_H
 
-void unmountSaveData();
-int mountSaveData();
+void unmount_save();
+int mount_save();
 
 #endif

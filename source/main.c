@@ -1,208 +1,205 @@
+#include <switch.h>
 #include "main.h"
+#include "mount.h"
+#include "save_io.h"
+#include "ui.h"
 
-void startSDLServices(){
-    SDL_Init(SDL_INIT_VIDEO);
-    TTF_Init();
 
-    Arial = TTF_OpenFont("romfs:/arial.ttf", 36);
-    Arial_M = TTF_OpenFont("romfs:/arial.ttf", 28);
-    Arial_S = TTF_OpenFont("romfs:/arial.ttf", 22);
 
-    SDL_CreateWindowAndRenderer(1280, 720, 0, &window, &renderer);
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-
-    if(mountSaveData() == 0){
-        currentState = -1;
-        errorScreen();
-    } else {
-        maxSlot = 7;
-        selectSlotMenu(slot);
-    }
+/* ---- helpers ---- */
+static int maxp(int n, int per) {
+    int p = n / per;
+    if (n % per) p++;
+    return p > 0 ? p : 1;
 }
 
-void initServices(){
-    buttons = 0;
-    slot = 0;
-    currentPage = 1;
-    currentState = 0;
-    currentItem = 0;
+static void go_slot() {
+    g_state = S_SLOT; g_slot = 0;
+    screen_slot(g_slot);
+}
+
+/* ---- editor ---- */
+static void open_editor(int val, int step) {
+    g_state = S_EDITOR;
+    g_editVal = val;
+    g_editStep = step;
+    screen_editor(g_editVal, g_editStep);
+}
+
+static void editor_adj(int dir) {
+    g_editVal += dir * g_editStep;
+    if (g_editVal < 0) g_editVal = 0;
+    screen_editor(g_editVal, g_editStep);
+}
+
+/* ---- nav helpers ---- */
+static void slot_nav(int dir) {
+    g_slot += dir;
+    if (g_slot < 0) g_slot = 7;
+    if (g_slot > 7) g_slot = 0;
+    screen_slot(g_slot);
+}
+
+static void menu_nav(int dir) {
+    g_sel += dir;
+    if (g_sel < 0) g_sel = 3;
+    if (g_sel > 3) g_sel = 0;
+    screen_mainmenu(g_sel);
+}
+
+static void list_nav(int dir, int n, int per) {
+    g_sel += dir;
+    if (g_sel < 0) { g_sel = per - 1; g_page--; }
+    if (g_sel >= per) { g_sel = 0; g_page++; }
+    if (g_page < 1) g_page = g_maxpage;
+    if (g_page > g_maxpage) g_page = 1;
+    // clamp sel to actual items on last page
+    int start = (g_page - 1) * per;
+    while (start + g_sel >= n && g_sel > 0) g_sel--;
+}
+
+/* ---- main ---- */
+int main(int argc, char **argv) {
     romfsInit();
-    startSDLServices();
-}
+    ui_init();
 
-void setPages(){
-    maxPage = numberOfItems / 5;
-    if(numberOfItems % 5 != 0)
-        maxPage++;
-    if(maxPage == 0) maxPage = 1;
-}
-
-void MenuButtonsSlot(int x){
-    switch(x){
-        case 0:
-            slot--;
-            if(slot < 0) slot = maxSlot;
-            break;
-        case 1:
-            slot++;
-            if(slot > maxSlot) slot = 0;
-            break;
+    if (!mount_save()) {
+        g_state = S_ERROR;
+        screen_error();
+    } else {
+        go_slot();
     }
-    selectSlotMenu(slot);
-}
-
-void MenuButtons(int x){
-    switch(x){
-        case 0:
-            buttons--;
-            if(buttons < 0){
-                currentPage--;
-                if(currentPage < 1) currentPage = maxPage;
-                buttons = 4;
-            }
-            break;
-        case 1:
-            buttons++;
-            if(buttons > 4){
-                currentPage++;
-                if(currentPage > maxPage) currentPage = 1;
-                buttons = 0;
-            }
-            break;
-        case 2:
-            currentPage++;
-            if(currentPage > maxPage) currentPage = 1;
-            break;
-        case 3:
-            currentPage--;
-            if(currentPage < 1) currentPage = maxPage;
-            break;
-    }
-    currentItem = (5 * (currentPage - 1) + buttons);
-    mainUI(buttons, currentPage, maxPage);
-}
-
-void adjustValue(int dir, int step){
-    if(currentState == 2){
-        newQuantItems[currentItem] += dir * step;
-        if(newQuantItems[currentItem] < 0) newQuantItems[currentItem] = 0;
-        if(newQuantItems[currentItem] > 9999) newQuantItems[currentItem] = 9999;
-        showEditValue(currentItem);
-        SDL_RenderPresent(renderer);
-    } else if(currentState == 3){
-        rupeeValue += dir * step;
-        if(rupeeValue < 0) rupeeValue = 0;
-        if(rupeeValue > 999999) rupeeValue = 999999;
-        showRupeeEdit();
-        SDL_RenderPresent(renderer);
-    }
-}
-
-void ConfirmButton(){
-    switch(currentState){
-        case 0:
-            if(setFile(slot)){
-                setPages();
-                currentState = 1;
-                mainUI(buttons, currentPage, maxPage);
-            } else {
-                currentState = -1;
-                errorScreen();
-            }
-            break;
-        case 1:
-            currentState = 2;
-            showEditValue(currentItem);
-            SDL_RenderPresent(renderer);
-            break;
-    }
-}
-
-void doSave(){
-    if(fp){
-        writeFile();
-        fclose(fp);
-        fp = NULL;
-    }
-}
-
-void buttonLogic(int x){
-    switch(currentState){
-        case 0:
-            MenuButtonsSlot(x);
-            break;
-        case 1:
-            MenuButtons(x);
-            break;
-        case 2:
-        case 3:
-            if(x >= 0 && x <= 3){
-                int step = (currentState == 2) ? 1 : 10;
-                if(x == 0) adjustValue(-1, step);
-                if(x == 1) adjustValue(1, step);
-                if(x == 2) adjustValue(1, step * 10);
-                if(x == 3) adjustValue(-1, step * 10);
-            }
-            break;
-    }
-}
-
-int main(int argc, char **argv){
-    initServices();
 
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
-    padInitializeDefault(&pad);
+    padInitializeDefault(&g_pad);
 
-    while(appletMainLoop()){
-        padUpdate(&pad);
-        u64 kDown = padGetButtonsDown(&pad);
+    while (appletMainLoop()) {
+        padUpdate(&g_pad);
+        u64 k = padGetButtonsDown(&g_pad);
 
-        if(kDown & HidNpadButton_Up) buttonLogic(0);
-        if(kDown & HidNpadButton_Down) buttonLogic(1);
-        if(kDown & HidNpadButton_Right) buttonLogic(2);
-        if(kDown & HidNpadButton_Left) buttonLogic(3);
-
-        if(kDown & HidNpadButton_A) ConfirmButton();
-
-        if(kDown & HidNpadButton_B){
-            if(currentState == 1){
-                currentState = 0;
-                selectSlotMenu(slot);
-            } else if(currentState == 2){
-                currentState = 1;
-                mainUI(buttons, currentPage, maxPage);
-            } else if(currentState == 3){
-                currentState = 1;
-                mainUI(buttons, currentPage, maxPage);
+        if (k & HidNpadButton_Plus) {
+            if (g_state == S_ITEMS || g_state == S_STATS || g_state == S_QUESTS) {
+                save_changes();
             }
+            break;
         }
 
-        if(kDown & HidNpadButton_Y){
-            if(currentState == 1){
-                currentState = 3;
-                showRupeeEdit();
-                SDL_RenderPresent(renderer);
-            }
-        }
+        switch (g_state) {
 
-        if(kDown & HidNpadButton_Plus){
-            if(currentState == 1 || currentState == 2 || currentState == 3)
-                doSave();
+        case S_SLOT:
+            if (k & HidNpadButton_Up)   slot_nav(-1);
+            if (k & HidNpadButton_Down) slot_nav(1);
+            if (k & HidNpadButton_A) {
+                if (load_save(g_slot)) {
+                    g_state = S_MENU; g_sel = 0;
+                    screen_mainmenu(g_sel);
+                } else {
+                    g_state = S_ERROR;
+                    screen_error();
+                }
+            }
+            break;
+
+        case S_MENU:
+            if (k & HidNpadButton_Up)    menu_nav(-1);
+            if (k & HidNpadButton_Down)  menu_nav(1);
+            if (k & HidNpadButton_A) {
+                if (g_sel == 0) { // inventory
+                    g_state = S_ITEMS; g_sel = 0; g_page = 1;
+                    g_maxpage = maxp(g_itemCount, 5);
+                    screen_itemlist(g_sel, g_page, g_maxpage);
+                } else if (g_sel == 1) { // stats
+                    g_state = S_STATS; g_sel = 0;
+                    screen_stats();
+                } else if (g_sel == 2) { // quests
+                    g_state = S_QUESTS; g_sel = 0; g_page = 1;
+                    g_maxpage = maxp(g_questCount, 6);
+                    screen_quests(g_sel, g_page, g_maxpage);
+                } else if (g_sel == 3) { // save & exit
+                    save_changes();
+                    goto done;
+                }
+            }
+            if (k & HidNpadButton_B) { go_slot(); }
+            break;
+
+        case S_ITEMS:
+            if (k & HidNpadButton_Up)   { list_nav(-1,g_itemCount,5); screen_itemlist(g_sel,g_page,g_maxpage); }
+            if (k & HidNpadButton_Down) { list_nav(1,g_itemCount,5);  screen_itemlist(g_sel,g_page,g_maxpage); }
+            if (k & HidNpadButton_Right){ g_page++; if(g_page>g_maxpage)g_page=1; g_sel=0; screen_itemlist(g_sel,g_page,g_maxpage); }
+            if (k & HidNpadButton_Left) { g_page--; if(g_page<1)g_page=g_maxpage; g_sel=0; screen_itemlist(g_sel,g_page,g_maxpage); }
+            if (k & HidNpadButton_A) {
+                int idx = (g_page-1)*5 + g_sel;
+                if (idx < g_itemCount) {
+                    g_editorType = 0; // quantity
+                    g_editTarget = idx;
+                    open_editor(g_newQuant[idx], 1);
+                }
+            }
+            if (k & HidNpadButton_B) { g_state = S_MENU; g_sel = 0; screen_mainmenu(g_sel); }
+            break;
+
+        case S_STATS:
+            if (k & HidNpadButton_A) {
+                g_editorType = 1; // rupee
+                g_editTarget = 0;
+                open_editor(g_newRupees, 10);
+            }
+            if (k & HidNpadButton_B) { g_state = S_MENU; g_sel = 1; screen_mainmenu(g_sel); }
+            break;
+
+        case S_QUESTS:
+            if (k & HidNpadButton_Up)   { list_nav(-1,g_questCount,6); screen_quests(g_sel,g_page,g_maxpage); }
+            if (k & HidNpadButton_Down) { list_nav(1,g_questCount,6);  screen_quests(g_sel,g_page,g_maxpage); }
+            if (k & HidNpadButton_Right){ g_page++; if(g_page>g_maxpage)g_page=1; g_sel=0; screen_quests(g_sel,g_page,g_maxpage); }
+            if (k & HidNpadButton_Left) { g_page--; if(g_page<1)g_page=g_maxpage; g_sel=0; screen_quests(g_sel,g_page,g_maxpage); }
+            if (k & HidNpadButton_A) {
+                int idx = (g_page-1)*6 + g_sel;
+                if (idx < g_questCount) {
+                    g_newQuestFlag[idx] = !g_newQuestFlag[idx];
+                    screen_quests(g_sel, g_page, g_maxpage);
+                }
+            }
+            if (k & HidNpadButton_B) { g_state = S_MENU; g_sel = 2; screen_mainmenu(g_sel); }
+            break;
+
+        case S_EDITOR:
+            if (k & HidNpadButton_Up)    editor_adj(1);
+            if (k & HidNpadButton_Down)  editor_adj(-1);
+            if (k & HidNpadButton_Right) { int save = g_editStep; g_editStep*=10; editor_adj(1); g_editStep = save; }
+            if (k & HidNpadButton_Left)  { int save = g_editStep; g_editStep*=10; editor_adj(-1); g_editStep = save; }
+            if (k & HidNpadButton_A) {
+                if (g_editorType == 0) { // item quantity
+                    int idx = g_editTarget;
+                    g_newQuant[idx] = g_editVal;
+                    g_state = S_ITEMS;
+                    screen_itemlist(g_sel, g_page, g_maxpage);
+                } else if (g_editorType == 1) { // rupee
+                    g_newRupees = g_editVal;
+                    g_state = S_STATS;
+                    screen_stats();
+                }
+            }
+            if (k & HidNpadButton_B) {
+                if (g_editorType == 0) {
+                    g_state = S_ITEMS;
+                    screen_itemlist(g_sel, g_page, g_maxpage);
+                } else if (g_editorType == 1) {
+                    g_state = S_STATS;
+                    screen_stats();
+                }
+            }
+            break;
+
+        case S_ERROR:
             break;
         }
     }
 
-    closeServices();
-    return 0;
-}
-
-void closeServices(){
-    if(fp) { fclose(fp); fp = NULL; }
-    unmountSaveData();
-    TTF_CloseFont(Arial);
-    TTF_CloseFont(Arial_S);
-    TTF_CloseFont(Arial_M);
-    TTF_Quit();
-    SDL_Quit();
+done:
+    if (g_fp) { fclose(g_fp); g_fp = NULL; }
+    unmount_save();
+    ui_quit();
     romfsExit();
+    return 0;
 }

@@ -16,7 +16,7 @@ DATA		:=	data
 INCLUDES	:=	include
 ROMFS		:=	romfs
 
-APP_TITLE	:=	BOTW Save Editor
+APP_TITLE	:=	Wild Save Editor
 APP_AUTHOR	:=	Switch
 APP_VERSION	:=	1.0
 

@@ -1,31 +1,30 @@
-#ifndef _main_h_
-#define _main_h_
+#ifndef MAIN_H
+#define MAIN_H
 
 #include <switch.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include "MainMenu.h"
-#include "botw_backend.h"
-#include "mount.h"
 
-int buttons;
-int currentPage;
-int maxPage;
-int currentState;
-int slot;
-int currentItem;
-int maxSlot;
+#define S_SLOT    0
+#define S_MENU    1
+#define S_ITEMS   2
+#define S_STATS   3
+#define S_QUESTS  4
+#define S_EDITOR  5
+#define S_ERROR  -1
 
-PadState pad;
+#define MENU_ITEMS   1
+#define MENU_STATS   2
+#define MENU_QUESTS  3
+#define MENU_SAVE    4
 
-int main(int argc, char **argv);
-void startSDLServices();
-void initServices();
-void buttonLogic(int x);
-void closeServices();
-void MenuButtons(int x);
-void ConfirmButton();
-void setPages();
-void MenuButtonsSlot(int x);
+extern int g_state;
+extern int g_sel;
+extern int g_page;
+extern int g_maxpage;
+extern int g_slot;
+extern int g_editVal;
+extern int g_editStep;
+extern int g_editTarget;
+extern int g_editorType;
+extern PadState g_pad;
 
 #endif
