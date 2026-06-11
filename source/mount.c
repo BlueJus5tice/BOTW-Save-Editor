@@ -13,7 +13,7 @@ int mountSaveData()
 {
     u64 titleID = 0x01007ef00011e000;
 
-    accountInitialize();
+    accountInitialize(AccountServiceType_Application);
 
     Result rc = accountGetPreselectedUser(&g_userID);
     if (R_FAILED(rc)) {
